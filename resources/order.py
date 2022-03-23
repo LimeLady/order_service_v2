@@ -8,12 +8,26 @@ from daos.status_dao import StatusDAO
 from db import Session
 
 
+TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
+
 class Order:
     @staticmethod
     def create(body):
         session = Session()
-        order = OrderDAO(body['customer_id'], body['product_id'], datetime.now(),
-                               datetime.strptime(body['delivery_time'], '%Y-%m-%d %H:%M:%S.%f'),
+
+        if not body:
+            return jsonify({"msg": "missing body!"}), 405
+
+        customer_id = body.get('customer_id')
+        product_id = body.get('product_id')
+        delivery_time = body.get('delivery_time', datetime.now().strftime(TIME_FORMAT))
+
+        if not (customer_id and product_id):
+            return jsonify({"msg": "customer_id or product_id is missing"}), 406
+
+        order = OrderDAO(customer_id, product_id, datetime.now(),
+                               datetime.strptime(delivery_time, TIME_FORMAT),
                                StatusDAO(STATUS_CREATED, datetime.now()))
         session.add(order)
         session.commit()
